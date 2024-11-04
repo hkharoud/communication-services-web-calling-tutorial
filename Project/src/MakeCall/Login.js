@@ -38,64 +38,20 @@ export default class Login extends React.Component {
             initializeCallAgentAfterPushRegistration: true,
             showUserProvisioningAndSdkInitializationCode: false,
             showSpinner: false,
-            loginWarningMessage: undefined,
-            loginErrorMessage: undefined,
-            proxy: {
-                useProxy: false,
-                url: ''
-            },
-            customTurn: {
-                useCustomTurn: false,
-                isLoading: false,
-                turn: null
-            },
-            isTeamsUser: false,
-            isJoinOnlyToken: false
+            disableInitializeButton: false,
+            showEnvironmentInfo: false,
+            loggedIn: false
         }
     }
 
     async componentDidMount() {
         try {
-            if (config.oneSignalAppId) {
-                if (location.protocol !== 'https:') {
-                    throw new Error('Web push notifications can only be tested on trusted HTTPS.');
-                }
-
-                await OneSignal.init({
-                    appId: config.oneSignalAppId,
-                    safari_web_id: config.oneSignalSafariWebId,
-                    notifyButton: {
-                        enable: true,
-                        colors: {
-                            'circle.background': '#ca5010'
-                        }
-                    },
-                });
-
-                OneSignal.addListenerForNotificationOpened(async function (event) {
-                    console.log('Push notification clicked and app will open if it is currently closed');
-                    await this.handlePushNotification(event);
-                }.bind(this));
-
-                OneSignal.on('notificationDisplay', async function (event) {
-                    console.log('Push notification displayed');
-                    await this.handlePushNotification(event);
-                }.bind(this));
-
-                OneSignal.on('subscriptionChange', async function(isSubscribed) {
-                    console.log("Push notification subscription state is now: ", isSubscribed);
-                    this.setState({ subscribedForPushNotifications:
-                        (await OneSignal.isPushNotificationsEnabled()) && (await OneSignal.getSubscription())
-                    });
-                }.bind(this));
-
-                this.setState({ initializedOneSignal: true});
-                this.setState({ subscribedForPushNotifications:
-                    (await OneSignal.isPushNotificationsEnabled()) && (await OneSignal.getSubscription())
-                });
-
-                await OneSignal.registerForPushNotifications();
-            }
+            this.setState({ showSpinner: true, disableInitializeButton: true });
+            this.userDetailsResponse = await utils.provisionNewUser({userId: this.userId});
+            this.setState({ id: utils.getIdentifierText(this.userDetailsResponse.user) });
+            await this.props.onLoggedIn({ id: this.state.id, token: this.userDetailsResponse.token, displayName: this.displayName, clientTag: this.clientTag });
+            this.state.isCallClientActiveInAnotherTab = undefined;
+            this.setState({ loggedIn: true });
         } catch (error) {
             this.setState({
                 loginWarningMessage: error.message
@@ -563,9 +519,132 @@ const isSupportedBrowserVersion = this.environmentInfo.isSupportedBrowserVersion
 const isSupportedEnvironment = this.environmentInfo.isSupportedEnvironment;
         `;
 
+
+        const environmentInfo = `
+/**************************************************************************************/
+/*     Environment Information     */
+/**************************************************************************************/
+// Get current environment information with details if supported by ACS
+this.environmentInfo = await this.callClient.feature(Features.DebugInfo).getEnvironmentInfo();
+
+// The returned value is an object of type EnvironmentInfo
+type EnvironmentInfo = {
+    environment: Environment;
+    isSupportedPlatform: boolean;
+    isSupportedBrowser: boolean;
+    isSupportedBrowserVersion: boolean;
+    isSupportedEnvironment: boolean;
+};
+
+// The Environment type in the EnvironmentInfo type is defined as:
+type Environment = {
+  platform: string;
+  browser: string;
+  browserVersion: string;
+};
+
+// The following code snippet shows how to get the current environment details
+const currentOperatingSystem = this.environmentInfo.environment.platform;
+const currentBrowser = this.environmentInfo.environment.browser;
+const currentBrowserVersion = this.environmentInfo.environment.browserVersion;
+const isCallClientActiveInAnotherTab = this.callClient.feature(Features.DebugInfo).isCallClientActiveInAnotherTab;
+
+// The following code snippet shows how to check if environment details are supported by ACS
+const isSupportedOperatingSystem = this.environmentInfo.isSupportedPlatform;
+const isSupportedBrowser = this.environmentInfo.isSupportedBrowser;
+const isSupportedBrowserVersion = this.environmentInfo.isSupportedBrowserVersion;
+const isSupportedEnvironment = this.environmentInfo.isSupportedEnvironment;
+
+        `;        
+
+
         return (
-                    <div className="card">
-                        <div className="ms-Grid">
+            <div className="card">
+                <div className="ms-Grid">
+                    <div className="ms-Grid-row">
+                        <h2 className="ms-Grid-col ms-lg6 ms-sm6 mb-4">ACS User identity Provisioning and Calling SDK Initialization</h2>
+                        <div className="ms-Grid-col ms-lg6 ms-sm6 text-right">
+                            <PrimaryButton className="primary-button"
+                                iconProps={{iconName: 'ReleaseGate', style: {verticalAlign: 'middle', fontSize: 'large'}}}
+                                text={`${this.state.showUserProvisioningAndSdkInitializationCode ? 'Hide' : 'Show'} code`}
+                                onClick={() => this.setState({showUserProvisioningAndSdkInitializationCode: !this.state.showUserProvisioningAndSdkInitializationCode})}>
+                            </PrimaryButton>
+                        </div>
+                    </div>
+                    {
+                        this.state.showUserProvisioningAndSdkInitializationCode &&
+                        <pre>
+                            <code style={{color: '#b3b0ad'}}>
+                                {userProvisioningAndSdkInitializationCode}
+                            </code>
+                        </pre>
+                    }
+                    <div>The ACS Administration SDK can be used to create a user access token which authenticates the calling clients. </div>
+                    <div>The example code shows how to use the ACS Administration SDK from a backend service. A walkthrough of integrating the ACS Administration SDK can be found on <a className="sdk-docs-link" target="_blank" href="https://docs.microsoft.com/en-us/azure/communication-services/quickstarts/access-tokens?pivots=programming-language-javascript">Microsoft Docs</a></div>
+                    {
+                        this.state.loggedIn && 
+                        <div>
+                            <br></br>
+                            <div>Congrats! You've provisioned an ACS user identity and initialized the ACS Calling Client Web SDK. You are ready to start making calls!</div>
+                            <div>The Identity you've provisioned is: <span className="identity"><b>{this.state.id}</b></span></div>
+                            <div>Usage is tagged with: <span className="identity"><b>{this.clientTag}</b></span></div>
+
+                            <br></br>
+                            <div className="text-right">
+                                <PrimaryButton
+                                    className="primary-button"
+                                    iconProps={{ iconName: 'Info', style: { verticalAlign: 'middle', fontSize: 'large' } }}
+                                    text={`${this.state.showEnvironmentInfo ? 'Hide' : 'Show '} Info`}
+                                    onClick={() => this.setState({ showEnvironmentInfo: !this.state.showEnvironmentInfo })}>
+                                </PrimaryButton>
+                                {
+                                    this.state.showEnvironmentInfo &&
+                                    <PrimaryButton
+                                        className="primary-button"
+                                        iconProps={{ iconName: 'Info', style: { verticalAlign: 'middle', fontSize: 'large' } }}
+                                        text={`${this.state.showEnvironmentInfoCode ? 'Hide' : 'Show'} code`}
+                                        onClick={() => this.setState({ showEnvironmentInfoCode: !this.state.showEnvironmentInfoCode })}>
+                                    </PrimaryButton>
+                                }
+                            </div>
+                            {
+                                this.state.showEnvironmentInfo && this.state.showEnvironmentInfoCode &&
+                                <pre>
+                                    <code style={{ color: '#b3b0ad' }}>
+                                        {environmentInfo}
+                                    </code>
+                                </pre>
+                            }
+                            {
+                                this.state.showEnvironmentInfo && 
+                                <div>
+                                <h2>Environment information</h2>
+                                <br></br>
+                                <h3>Current environment details</h3>
+                                <div>{`Operating system:   ${this.props.environmentInfo?.environment?.platform}.`}</div>
+                                <div>{`Browser:  ${this.props.environmentInfo?.environment?.browser}.`}</div>
+                                <div>{`Browser's version:  ${this.props.environmentInfo?.environment?.browserVersion}.`}</div>
+                                <div>{`Is the application loaded in many tabs:  ${this.props.isCallClientActiveInAnotherTab}.`}</div>
+                                <br></br>
+                                <h3>Environment support verification</h3>
+                                <div>{`Operating system supported:  ${this.props.environmentInfo?.isSupportedPlatform}.`}</div>
+                                <div>{`Browser supported:  ${this.props.environmentInfo?.isSupportedBrowser}.`}</div>
+                                <div>{`Browser's version supported:  ${this.props.environmentInfo?.isSupportedBrowserVersion}.`}</div>
+                                <div>{`Current environment supported:  ${this.props.environmentInfo?.isSupportedEnvironment}.`}</div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    {
+                        this.state.showSpinner &&
+                        <div className="custom-row justify-content-left align-items-center mt-4">
+                            <div className="loader"> </div>
+                            <div className="ml-2">Fetching token from service and initializing SDK...</div>
+                        </div>
+                    }
+                    {
+                        !this.state.loggedIn &&
+                        <div>
                             <div className="ms-Grid-row">
                                 <h2 className="ms-Grid-col ms-lg6 ms-sm6 mb-4">User Identity Provisioning and Calling SDK Initialization</h2>
                                 <div className="ms-Grid-col ms-lg6 ms-sm6 text-right">

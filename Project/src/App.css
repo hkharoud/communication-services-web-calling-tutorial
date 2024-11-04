@@ -442,8 +442,8 @@ div.ms-Checkbox>input[type="checkbox"]+label.ms-Checkbox-label>span.ms-Checkbox-
   padding-bottom: 0.5em;
 }
 
-.speaking-border-for-initials>.ms-Persona-coin>.ms-Persona-imageArea>.ms-Persona-initials {
-  box-shadow: 0px 0px 0px 3px #75b6e7, 0px 0px 20px 5px #75b6e7;
+.speaking-border-for-initials > .ms-Persona-coin > .ms-Persona-imageArea > .ms-Persona-initials {
+  box-shadow: 0px 0px 0px 3px #ca5010,  0px 0px 20px 5px #ca5010;
 }
 
 .speaking-border-for-video {
@@ -1141,61 +1141,20 @@ div.volumeVisualizer::before {
     transform: translateZ(0);
 }
 
-.custom-video-effects-buttons:not(.outgoing) {
-  display: flex;
-  position: absolute;
-  top: 4%;
-  left: 5%;
-  margin-bottom: -0.5em;
-}
-
-.custom-video-effects-buttons:not(.outgoing) button {
-  z-index: 999;
-  background-color: #0000006e;
-  border: none;
-}
-
-.video-feature-sample .primary-button {
-  background: transparent;
-  border: 1px solid #fff;
-}
-
-.video-feature-sample .primary-button.is-disabled {
-  border: 1px solid grey;
-  color: grey;
-}
-
-.spotlightEnabled {
-  border: 1px solid  #75b6e7;
-}
-
-.lobby-action{
-  margin-top: 2px;
-}
-
-.lobby-action a{
-  display: inline-block;
-  color: #75b6e7;
-  text-decoration: none;
-}
-
-.participantMenu, .participantMenu:hover{
-  background-color: inherit;
-  width: fit-content;
-  color: white;
-  border: none;
-  margin-right: 5px;
-}
-.participantMenu .ms-Icon {
-  font-size: 30px;
-  border: none;
-}
-
-.callFeatureEnabled, .callFeatureEnabled:hover {
-  color: #75b6e7;
-}
-
-.dominant-speakers-list {
-  max-height: 12em;
-  overflow-y: auto;
+  .remote-video-loading-spinner {
+    border: 8px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 8px solid #ca5010;
+    width: 60px;
+    height: 60px;
+    -webkit-animation: spin 2s linear infinite; /* Safari */
+    animation: spin 2s linear infinite;
+    position: absolute;
+    margin: auto;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    transform: translate(-50%, -50%);
+  }
 }

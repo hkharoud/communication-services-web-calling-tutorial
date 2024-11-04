@@ -86,15 +86,8 @@ export default class CallCard extends React.Component {
             sentResolution: '',
             remoteVolumeIndicator: undefined,
             remoteVolumeLevel: undefined,
-            mediaCollector: undefined,
-            isSpotlighted: false,
-            isHandRaised: false,
-            dominantSpeakersListActive: false,
-            dominantSpeakers:[],
-            showDataChannel: false,
-            showAddParticipantPanel: false,
-            reactionRows:[],
-            pptLiveActive: false
+            logMediaStats: false,
+            sentResolution: ''
         };
         this.selectedRemoteParticipants = new Set();
         this.dataChannelRef = React.createRef();
@@ -352,18 +345,8 @@ export default class CallCard extends React.Component {
                 }
                 this.state.allRemoteParticipantStreams.forEach(v => {
                     let renderer = v.streamRendererComponentRef.current;
-                    renderer?.updateReceiveStats(stats[v.stream.id]);
+                    renderer.updateReceiveStats(stats[v.stream.id]);
                 });
-                if (this.state.logMediaStats) {
-                    if (data.video.send.length > 0) {
-                        let renderer = this.localVideoPreviewRef.current;
-                        renderer?.updateSendStats(data.video.send[0]);
-                    }
-                    if (data.screenShare.send.length > 0) {
-                        let renderer = this.localScreenSharingPreviewRef.current;
-                        renderer?.updateSendStats(data.screenShare.send[0]);
-                    }
-                }
             });
             mediaCollector.on('summaryReported', (data) => {
                 if (this.state.logMediaStats) {
@@ -1102,7 +1085,78 @@ export default class CallCard extends React.Component {
                 </div>
                 <div className="ms-Grid-row">
                     <div className="ms-Grid-col ms-lg6">
-                        <div>
+                        <h2>{this.state.callState !== 'Connected' ? `${this.state.callState}...` : `Connected`}</h2>
+                    </div>
+                    <div className="ms-Grid-col ms-lg6 text-right">
+                        {
+                            this.call &&
+                            <h2>Call Id: {this.state.callId}</h2>
+                        }
+                        {
+                            this.call &&
+                            <h2>Local Participant Id: {this.state.localParticipantid}</h2>
+                        }
+                        {
+                            this.call &&
+                            <h2>Sent Resolution: {this.state.sentResolution}</h2>
+                        }
+                    </div>
+                </div>
+                <div className="ms-Grid-row">
+                    {
+                        this.state.callState === 'Connected' &&
+                        <div className="ms-Grid-col ms-sm12 ms-lg12 ms-xl12 ms-xxl3">
+                            <div className="participants-panel mt-1 mb-3">
+                                <Toggle label={
+                                        <div>
+                                            Dominant Speaker mode{' '}
+                                            <TooltipHost content={`Render the most dominant speaker's video streams only or render all remote participant video streams`}>
+                                                <Icon iconName="Info" aria-label="Info tooltip" />
+                                            </TooltipHost>
+                                        </div>
+                                    }
+                                    styles={{
+                                        text : { color: '#edebe9' },
+                                        label: { color: '#edebe9' },
+                                    }}
+                                    inlineLabel
+                                    onText="On"
+                                    offText="Off"
+                                    onChange={() => { this.toggleDominantSpeakerMode()}}
+                                />
+                                {
+                                    this.state.dominantSpeakerMode &&
+                                    <div>
+                                        Current dominant speaker: {this.state.dominantRemoteParticipant ? utils.getIdentifierText(this.state.dominantRemoteParticipant.identifier) : `None`}
+                                    </div>
+                                }
+                                <div className="participants-panel-title custom-row text-center">
+                                    <AddParticipantPopover call={this.call} />
+                                </div>
+                                {
+                                    this.state.remoteParticipants.length === 0 &&
+                                    <p className="text-center">No other participants currently in the call</p>
+                                }
+                                <ul className="participants-panel-list">
+                                    {
+                                        this.state.remoteParticipants.map(remoteParticipant =>
+                                            <RemoteParticipantCard key={`${utils.getIdentifierText(remoteParticipant.identifier)}`} remoteParticipant={remoteParticipant} call={this.call} />
+                                        )
+                                    }
+                                </ul>
+                            </div>
+                            <div>
+                                {
+                                    this.state.showLocalVideo &&
+                                    <div className="mb-3">
+                                        <LocalVideoPreviewCard selectedCameraDeviceId={this.state.selectedCameraDeviceId} deviceManager={this.deviceManager} />
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    <div className={this.state.callState === 'Connected' ? `ms-Grid-col ms-sm12 ms-lg12 ms-xl12 ms-xxl9` : 'ms-Grid-col ms-sm12 ms-lg12 ms-xl12 ms-xxl12'}>
+                        <div className="mb-2">
                             {
                                 this.state.callState !== 'Connected' &&
                                 <div className="inline-block ringing-loader mr-2"></div>

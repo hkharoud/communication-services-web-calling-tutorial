@@ -1,9 +1,7 @@
 import React from "react";
 import { utils } from '../Utils/Utils';
 import { VideoStreamRenderer } from "@azure/communication-calling";
-import CustomVideoEffects from "./RawVideoAccess/CustomVideoEffects";
 import VideoReceiveStats from './VideoReceiveStats';
-
 export default class StreamRenderer extends React.Component {
     constructor(props) {
         super(props);
@@ -21,7 +19,7 @@ export default class StreamRenderer extends React.Component {
         this.state = {
             isSpeaking: false,
             displayName: this.remoteParticipant.displayName?.trim(),
-            videoStats: undefined
+            videoStats: undefined,
         };
         this.call = props.call;
     }
